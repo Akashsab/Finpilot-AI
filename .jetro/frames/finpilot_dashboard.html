@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FinPilot AI Dashboard</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #08070d;
+    --card-bg: #111019;
+    --card-border: #211f30;
+    --violet: #a855f7;
+    --indigo: #6366f1;
+    --rose: #f43f5e;
+    --cyan: #06b6d4;
+    --emerald: #10b981;
+    --amber: #f59e0b;
+  }
+  html, body { height: 100%; background: var(--bg); font-family: 'Inter', sans-serif; color: #e5e7eb; overflow: hidden; }
+  .app { display: flex; height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 240px; flex-shrink: 0; display: flex; flex-direction: column;
+    background: #0b0a11; border-right: 1px solid var(--card-border);
+  }
+  .sidebar-logo {
+    height: 72px; display: flex; align-items: center; gap: 12px;
+    padding: 0 20px; border-bottom: 1px solid var(--card-border);
+  }
+  .logo-mark {
+    width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--violet), var(--indigo));
+    box-shadow: 0 4px 16px rgba(168,85,247,.3); font-size: 18px; flex-shrink: 0;
+  }
+  .logo-text h1 { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+  .logo-text span { font-size: 9px; font-weight: 700; color: var(--violet); letter-spacing: 1.5px; display: flex; align-items: center; gap: 4px; margin-top: 3px; }
+  .ai-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--violet); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 6px rgba(168,85,247,.6)} 50%{opacity:.4;box-shadow:0 0 2px rgba(168,85,247,.1)} }
+
+  .nav { flex: 1; padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 12px;
+    font-size: 13px; font-weight: 500; cursor: pointer; color: #9ca3af;
+    border: 1px solid transparent; transition: all .2s; position: relative; overflow: hidden;
+  }
+  .nav-item:hover { background: rgba(255,255,255,.03); color: #fff; border-color: rgba(255,255,255,.04); }
+  .nav-item:hover .nav-icon { transform: scale(1.12) rotate(2deg); }
+  .nav-item.active {
+    background: linear-gradient(135deg, rgba(168,85,247,.14), rgba(99,102,241,.08));
+    color: #fff; font-weight: 600;
+    border-color: rgba(168,85,247,.25);
+    box-shadow: 0 0 14px -4px rgba(168,85,247,.15);
+  }
+  .nav-item.active::before {
+    content: ''; position: absolute; left: 0; top: 12px; bottom: 12px;
+    width: 3px; border-radius: 0 4px 4px 0; background: var(--violet);
+  }
+  .nav-item.active .nav-icon { color: var(--violet); }
+  .nav-icon { width: 18px; height: 18px; transition: transform .2s; flex-shrink: 0; }
+  svg { display: block; }
+
+  .user-card {
+    margin: 12px; padding: 12px; border-radius: 14px;
+    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.04);
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    transition: background .2s;
+  }
+  .user-card:hover { background: rgba(255,255,255,.05); }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--indigo);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff; position: relative; flex-shrink: 0;
+  }
+  .online-dot { position: absolute; bottom: -1px; right: -1px; width: 10px; height: 10px; border-radius: 50%; background: var(--emerald); border: 2px solid #0b0a11; }
+  .user-info p { font-size: 12px; font-weight: 700; color: #fff; }
+  .user-info span { font-size: 10px; color: #6b7280; font-weight: 500; }
+
+  /* ── Main ── */
+  .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .header {
+    padding: 24px 28px 20px; border-bottom: 1px solid var(--card-border);
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    background: rgba(8,7,13,.6); backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 10;
+  }
+  .header-left h2 { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+  .header-left p { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .badge {
+    display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px;
+    font-size: 11px; font-weight: 600; letter-spacing: .3px;
+  }
+  .badge-violet { background: rgba(168,85,247,.1); border: 1px solid rgba(168,85,247,.2); color: var(--violet); }
+  .badge-rose   { background: rgba(244,63,94,.1);  border: 1px solid rgba(244,63,94,.2);  color: var(--rose); }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--card-border);
+    background: transparent; color: #9ca3af; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all .2s; position: relative;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,.05); color: #fff; }
+  .notif-dot { position: absolute; top: 8px; right: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--violet); animation: pulse 2s infinite; }
+
+  /* ── Content ── */
+  .content { padding: 24px 28px; flex: 1; }
+
+  /* Stats Grid */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px;
+    padding: 20px; position: relative; overflow: hidden; transition: transform .2s, box-shadow .2s; cursor: pointer;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,.4); }
+  .stat-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-bottom: 14px; }
+  .stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; }
+  .stat-value { font-size: 26px; font-weight: 800; color: #fff; margin: 4px 0; letter-spacing: -.5px; }
+  .stat-sub { font-size: 10px; color: #6b7280; }
+  .stat-trend { position: absolute; top: 18px; right: 18px; font-size: 10px; font-weight: 700; display: flex; align-items: center; gap: 3px; }
+  .up   { color: var(--emerald); }
+  .down { color: var(--rose); }
+  .stat-bg-glow { position: absolute; right: -10px; bottom: -10px; width: 60px; height: 60px; border-radius: 50%; opacity: .07; }
+
+  /* Charts row */
+  .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 22px; }
+  .card-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .card-sub   { font-size: 11px; color: #6b7280; margin-bottom: 16px; }
+
+  /* Transactions table */
+  .tx-table { width: 100%; border-collapse: collapse; }
+  .tx-table thead tr { border-bottom: 1px solid var(--card-border); }
+  .tx-table th { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; padding: 10px 12px; text-align: left; }
+  .tx-table tbody tr { border-bottom: 1px solid rgba(33,31,48,.5); transition: background .15s; cursor: pointer; }
+  .tx-table tbody tr:hover { background: rgba(255,255,255,.03); }
+  .tx-table td { padding: 12px 12px; font-size: 12px; }
+  .merchant-logo { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; margin-right: 10px; flex-shrink: 0; }
+  .tx-merchant { display: flex; align-items: center; }
+  .tx-name { font-size: 13px; font-weight: 600; color: #fff; }
+  .tx-date { font-size: 10px; color: #6b7280; margin-top: 1px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 7px; font-size: 10px; font-weight: 700; }
+  .chip-emerald { background: rgba(16,185,129,.1); color: var(--emerald); }
+  .chip-rose    { background: rgba(244,63,94,.1);  color: var(--rose);    }
+  .chip-amber   { background: rgba(245,158,11,.1);  color: var(--amber);   }
+  .chip-indigo  { background: rgba(99,102,241,.1);  color: var(--indigo);  }
+  .tx-amount-pos { font-weight: 700; color: var(--emerald); }
+  .tx-amount-neg { font-weight: 700; color: #e5e7eb; }
+
+  /* AI Insights panel */
+  .bottom-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  .insight-item { padding: 14px; border-radius: 12px; border: 1px solid; margin-bottom: 10px; }
+  .insight-warning { border-color: rgba(244,63,94,.2); background: rgba(244,63,94,.05); }
+  .insight-info    { border-color: rgba(6,182,212,.2);  background: rgba(6,182,212,.05); }
+  .insight-success { border-color: rgba(16,185,129,.2); background: rgba(16,185,129,.05); }
+  .insight-title { font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .insight-desc  { font-size: 11px; color: #9ca3af; line-height: 1.5; }
+  .insight-action { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; margin-top: 8px; cursor: pointer; }
+
+  /* Threat ledger */
+  .threat-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(33,31,48,.5); font-size: 11px; }
+  .threat-item:last-child { border-bottom: none; }
+  .threat-key { color: #6b7280; }
+  .threat-val { color: #e5e7eb; font-weight: 600; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: #211f30; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--violet); }
+
+  /* Animations */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .animate-in { animation: fadeUp .5s ease forwards; }
+  .d1{animation-delay:.05s;opacity:0} .d2{animation-delay:.1s;opacity:0} .d3{animation-delay:.15s;opacity:0} .d4{animation-delay:.2s;opacity:0}
+
+  /* Page switcher */
+  .page { display: none; }
+  .page.active { display: block; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">✦</div>
+      <div class="logo-text">
+        <h1>FinPilot</h1>
+        <span><span class="ai-dot"></span>AI ACTIVE</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-item active" onclick="showPage('dashboard',this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('transactions',this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="15"/><path d="M5 12h2M17 12h2"/></svg>
+        Transactions
+      </div>
+      <div class="nav-item" onclick="showPage('insights',this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46L7 19v-2a5 5 0 0 0-5-5v-2a5 5 0 0 0 5-5v-2a2.5 2.5 0 0 1 2.5-2.5z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5"/><path d="M14.5 22A2.5 2.5 0 0 0 17 19.5"/><path d="M17 19v-2a5 5 0 0 1 5-5v-2a5 5 0 0 1-5-5V3"/></svg>
+        AI Insights
+      </div>
+      <div class="nav-item" onclick="showPage('fraud',this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Fraud Detection
+      </div>
+      <div class="nav-item" onclick="showPage('assistant',this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        AI Assistant
+      </div>
+    </nav>
+
+    <div class="user-card">
+      <div class="avatar">JD<div class="online-dot"></div></div>
+      <div class="user-info"><p>Jane Doe</p><span>Founder @ NovaDev</span></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ══════════ DASHBOARD ══════════ -->
+    <div id="page-dashboard" class="page active">
+      <div class="header">
+        <div class="header-left">
+          <h2>Operations Overview</h2>
+          <p>May 26, 2026 · Real-time AI fiscal monitoring</p>
+        </div>
+        <div class="header-right">
+          <div class="badge badge-violet">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            FinPilot AI: Auditing
+          </div>
+          <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg><div class="notif-dot"></div></button>
+        </div>
+      </div>
+      <div class="content">
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card animate-in d1">
+            <div class="stat-icon" style="background:rgba(168,85,247,.12);color:var(--violet)">💰</div>
+            <div class="stat-label">Total Balance</div>
+            <div class="stat-value">$124,350</div>
+            <div class="stat-sub">All accounts combined</div>
+            <div class="stat-trend up">▲ 12.4%</div>
+            <div class="stat-bg-glow" style="background:var(--violet)"></div>
+          </div>
+          <div class="stat-card animate-in d2">
+            <div class="stat-icon" style="background:rgba(244,63,94,.12);color:var(--rose)">📉</div>
+            <div class="stat-label">Monthly Expenses</div>
+            <div class="stat-value">$8,340</div>
+            <div class="stat-sub">vs $7,210 last month</div>
+            <div class="stat-trend down">▲ 15.7%</div>
+            <div class="stat-bg-glow" style="background:var(--rose)"></div>
+          </div>
+          <div class="stat-card animate-in d3">
+            <div class="stat-icon" style="background:rgba(16,185,129,.12);color:var(--emerald)">📈</div>
+            <div class="stat-label">Revenue Inflow</div>
+            <div class="stat-value">$61,250</div>
+            <div class="stat-sub">Week-over-week +8%</div>
+            <div class="stat-trend up">▲ 8.0%</div>
+            <div class="stat-bg-glow" style="background:var(--emerald)"></div>
+          </div>
+          <div class="stat-card animate-in d4">
+            <div class="stat-icon" style="background:rgba(245,158,11,.12);color:var(--amber)">🚨</div>
+            <div class="stat-label">Fraud Alerts</div>
+            <div class="stat-value">2</div>
+            <div class="stat-sub">Quarantined — pending review</div>
+            <div class="stat-trend down">Critical</div>
+            <div class="stat-bg-glow" style="background:var(--amber)"></div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+          <div class="card animate-in d2">
+            <div class="card-title">Revenue vs Expenses — FY2026</div>
+            <div class="card-sub">Monthly financial performance trend</div>
+            <div id="chart-rev" style="height:200px"></div>
+          </div>
+          <div class="card animate-in d3">
+            <div class="card-title">Spending Breakdown</div>
+            <div class="card-sub">Category distribution this month</div>
+            <div id="chart-pie" style="height:200px"></div>
+          </div>
+        </div>
+
+        <!-- Transactions + Insights -->
+        <div class="bottom-row">
+          <div class="card animate-in d3">
+            <div class="card-title">Transaction Ledger</div>
+            <div class="card-sub" style="margin-bottom:14px">AI-augmented with real-time risk scores</div>
+            <table class="tx-table">
+              <thead><tr>
+                <th>Merchant</th><th>Category</th><th>Risk</th><th>Status</th><th style="text-align:right">Amount</th>
+              </tr></thead>
+              <tbody>
+                <tr><td><div class="tx-merchant"><div class="merchant-logo" style="background:rgba(255,153,0,.12);color:#f90">AW</div><div><div class="tx-name">Amazon Web Services</div><div class="tx-date">May 24 · Cloud Infra</div></div></div></td><td><span class="chip chip-indigo">Cloud</span></td><td><span class="chip chip-emerald">Low · 8</span></td><td><span class="chip chip-emerald">✓ Done</span></td><td class="tx-amount-neg" style="text-align:right">−$1,420</td></tr>
+                <tr><td><div class="tx-merchant"><div class="merchant-logo" style="background:rgba(16,185,129,.12);color:var(--emerald)">SP</div><div><div class="tx-name">Stripe Payout</div><div class="tx-date">May 23 · Revenue</div></div></div></td><td><span class="chip chip-emerald">Revenue</span></td><td><span class="chip chip-emerald">Low · 2</span></td><td><span class="chip chip-emerald">✓ Done</span></td><td class="tx-amount-pos" style="text-align:right">+$8,750</td></tr>
+                <tr><td><div class="tx-merchant"><div class="merchant-logo" style="background:rgba(244,63,94,.12);color:var(--rose)">UT</div><div><div class="tx-name">Unknown Terminal #49</div><div class="tx-date">May 22 · ATM · NY</div></div></div></td><td><span class="chip chip-rose">Uncategorized</span></td><td><span class="chip chip-rose">Critical · 89</span></td><td><span class="chip chip-rose">⚠ Flagged</span></td><td class="tx-amount-neg" style="text-align:right">−$250</td></tr>
+                <tr><td><div class="tx-merchant"><div class="merchant-logo" style="background:rgba(99,102,241,.12);color:var(--indigo)">GC</div><div><div class="tx-name">Google Cloud Platform</div><div class="tx-date">May 21 · AI API</div></div></div></td><td><span class="chip chip-indigo">Cloud</span></td><td><span class="chip chip-emerald">Low · 12</span></td><td><span class="chip chip-emerald">✓ Done</span></td><td class="tx-amount-neg" style="text-align:right">−$780</td></tr>
+                <tr><td><div class="tx-merchant"><div class="merchant-logo" style="background:rgba(244,63,94,.12);color:var(--rose)">CS</div><div><div class="tx-name">CryptoSwap Inc</div><div class="tx-date">May 16 · DeFi</div></div></div></td><td><span class="chip chip-rose">Investments</span></td><td><span class="chip chip-rose">Critical · 94</span></td><td><span class="chip chip-rose">⚠ Flagged</span></td><td class="tx-amount-neg" style="text-align:right">−$850</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card animate-in d4">
+            <div class="card-title" style="margin-bottom:14px">FinPilot Recommendations</div>
+            <div class="insight-item insight-warning">
+              <div class="insight-title">⚠ SaaS Cost Spikes</div>
+              <div class="insight-desc">SaaS costs up 18% YoY. 3 duplicate Figma seats detected.</div>
+              <div class="insight-action" style="color:var(--rose)">De-duplicate Seats →</div>
+            </div>
+            <div class="insight-item insight-info">
+              <div class="insight-title">💡 Prepayment Discount</div>
+              <div class="insight-desc">OpenAI offers 10% off for prepaid bundles. Save $200/yr.</div>
+              <div class="insight-action" style="color:var(--cyan)">Claim Discount →</div>
+            </div>
+            <div class="insight-item insight-success">
+              <div class="insight-title">✓ Monetization Signal</div>
+              <div class="insight-desc">Revenue-to-infra ratio 5.4× — extremely healthy. Expand ad limits.</div>
+              <div class="insight-action" style="color:var(--emerald)">Increase Ad Spend →</div>
+            </div>
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--card-border)">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin-bottom:10px">Cognitive Threat Ledger</div>
+              <div class="threat-item"><span class="threat-key">Model Precision</span><span class="threat-val" style="color:var(--emerald)">99.84% F1</span></div>
+              <div class="threat-item"><span class="threat-key">Last Audit</span><span class="threat-val">10 mins ago</span></div>
+              <div class="threat-item"><span class="threat-key">Active Guards</span><span class="threat-val">42 policies</span></div>
+              <div class="threat-item"><span class="threat-key">Integrations</span><span class="threat-val" style="color:var(--violet)">Stripe · Plaid</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ TRANSACTIONS ══════════ -->
+    <div id="page-transactions" class="page">
+      <div class="header">
+        <div class="header-left"><h2>Transaction Ledger</h2><p>ML risk-scored ledger with full AI telemetry</p></div>
+        <div class="header-right"><div class="badge badge-violet">🧠 Telemetry: Active</div></div>
+      </div>
+      <div class="content">
+        <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stat-card"><div class="stat-label">Total Volume</div><div class="stat-value" style="font-size:20px">$19,670.70</div><div class="stat-sub">All ledger entries combined</div></div>
+          <div class="stat-card"><div class="stat-label">Revenue Inflows</div><div class="stat-value" style="font-size:20px;color:var(--emerald)">$12,200.00</div><div class="stat-sub">Stripe · Shopify settlement</div></div>
+          <div class="stat-card"><div class="stat-label">Quarantined</div><div class="stat-value" style="font-size:20px;color:var(--rose)">2 Transactions</div><div class="stat-sub">Pending security audit</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Full Transaction History</div>
+          <div class="card-sub">Expand any row for AI deep-analysis report</div>
+          <table class="tx-table">
+            <thead><tr><th>Merchant</th><th>Category</th><th>AI Risk</th><th>Status</th><th style="text-align:right">Amount</th></tr></thead>
+            <tbody>
+              <tr><td><div class="tx-merchant"><div class="merchant-logo" style="background:rgba(255,153,0,.12);color:#f90">AW</div><div><div class="tx-name">Amazon Web Services</div><div class="tx-date">May 24 · Cloud compute EC2 &amp; RDS</div></div></div></td><td><span class="chip chip-indigo">Cloud Infra</span></td><td><span class="chip chip-emerald">Low · 8</span></td><td><span class="chip chip-emerald">✓ Completed</span></td><td class="tx-amount-neg" style="text-align:right">−$1,420.50</td></tr>
+              <tr><td><div class="tx-merchant"><div class="merchant-logo" style="background:rgba(16,185,129,.12);color:var(--emerald)">SP</div><div><div class="tx-name">Stripe Payout</div><div class="tx-date">May 23 · Daily merchant settlement</div></div></div></td><td><span class="chip chip-emerald">Revenue</span></td><td><span class="chip chip-emerald">Low · 2</span></td><td><span class="chip chip-emerald">✓ Completed</span></td><td class="tx-amount-pos" style="text-align:right">+$8,750.00</td></tr>
+              <tr><td><div class="tx-merchant"><div class="merchant-logo" style="background:rgba(168,85,247,.12);color:var(--violet)">FI</div><div><div class="tx-name">Figma Inc</div><div class="tx-date">May 23 · Design team seats</div></div></div></td><td><span class="chip chip-indigo">SaaS Tools</span></td><td><span class="chip chip-emerald">Low · 5</span></td><td><span class="chip chip-emerald">✓ Completed</span></td><td class="tx-amount-neg" style="text-align:right">−$320.00</td></tr>
+              <tr style="background:rgba(244,63,94,.03)"><td><div class="tx-merchant"><div class="merchant-logo" style="background:rgba(244,63,94,.12);color:var(--rose)">UT</div><div><div class="tx-name">Unknown Terminal #49</div><div class="tx-date">May 22 · ATM Withdrawal · NY, USA</div></div></div></td><td><span class="chip chip-rose">Uncategorized</span></td><td><span class="chip chip-rose">Critical · 89</span></td><td><span class="chip chip-rose">⚠ Flagged</span></td><td class="tx-amount-neg" style="text-align:right">−$250.00</td></tr>
+              <tr><td><div class="tx-merchant"><div class="merchant-logo" style="background:rgba(66,133,244,.12);color:#4285f4">GC</div><div><div class="tx-name">Google Cloud Platform</div><div class="tx-date">May 21 · BigQuery &amp; AI API</div></div></div></td><td><span class="chip chip-indigo">Cloud Infra</span></td><td><span class="chip chip-emerald">Low · 12</span></td><td><span class="chip chip-emerald">✓ Completed</span></td><td class="tx-amount-neg" style="text-align:right">−$780.20</td></tr>
+              <tr><td><div class="tx-merchant"><div class="merchant-logo" style="background:rgba(255,255,255,.06);color:#fff">VE</div><div><div class="tx-name">Vercel Enterprise</div><div class="tx-date">May 20 · CDN Hosting</div></div></div></td><td><span class="chip chip-indigo">SaaS Tools</span></td><td><span class="chip chip-emerald">Low · 4</span></td><td><span class="chip chip-emerald">✓ Completed</span></td><td class="tx-amount-neg" style="text-align:right">−$450.00</td></tr>
+              <tr><td><div class="tx-merchant"><div class="merchant-logo" style="background:rgba(6,182,212,.12);color:var(--cyan)">OA</div><div><div class="tx-name">OpenAI API</div><div class="tx-date">May 19 · GPT-4o credits</div></div></div></td><td><span class="chip chip-indigo">SaaS Tools</span></td><td><span class="chip chip-emerald">Low · 9</span></td><td><span class="chip chip-emerald">✓ Completed</span></td><td class="tx-amount-neg" style="text-align:right">−$500.00</td></tr>
+              <tr style="background:rgba(244,63,94,.03)"><td><div class="tx-merchant"><div class="merchant-logo" style="background:rgba(244,63,94,.12);color:var(--rose)">CS</div><div><div class="tx-name">CryptoSwap Inc</div><div class="tx-date">May 16 · DeFi liquidity transfer</div></div></div></td><td><span class="chip chip-rose">Investments</span></td><td><span class="chip chip-rose">Critical · 94</span></td><td><span class="chip chip-rose">⚠ Flagged</span></td><td class="tx-amount-neg" style="text-align:right">−$850.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ AI INSIGHTS ══════════ -->
+    <div id="page-insights" class="page">
+      <div class="header">
+        <div class="header-left"><h2>AI Insights Ledger</h2><p>Automated cognitive recommendations and real-time audits</p></div>
+        <div class="header-right"><div class="badge badge-violet">🧠 Analysis Engine: Live</div></div>
+      </div>
+      <div class="content">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-title">⚠ SaaS Cost Spikes</div>
+            <div class="card-sub">Warning · Optimization Opportunity</div>
+            <p style="font-size:12px;color:#9ca3af;line-height:1.7">SaaS tools and cloud hosting costs are up <strong style="color:#fff">18% YoY</strong>. You have 3 duplicate user seats on Figma costing $90/month. OpenAI prepaid bundles could save <strong style="color:#fff">$200 annually</strong>.</p>
+            <button style="margin-top:14px;padding:8px 16px;border-radius:10px;background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.2);color:var(--rose);font-size:11px;font-weight:700;cursor:pointer">De-duplicate Figma Seats →</button>
+          </div>
+          <div class="card">
+            <div class="card-title">💡 Prepayment Discount Available</div>
+            <div class="card-sub">Info · Action Required</div>
+            <p style="font-size:12px;color:#9ca3af;line-height:1.7">OpenAI API offers a <strong style="color:#fff">10% credit discount</strong> for prepaid bundles above $2,000. At your current usage rate, this translates to <strong style="color:#fff">$200 in annual savings</strong>.</p>
+            <button style="margin-top:14px;padding:8px 16px;border-radius:10px;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.2);color:var(--cyan);font-size:11px;font-weight:700;cursor:pointer">Claim Discount →</button>
+          </div>
+          <div class="card">
+            <div class="card-title">✓ Monetization Signal Detected</div>
+            <div class="card-sub">Success · Revenue Optimization</div>
+            <p style="font-size:12px;color:#9ca3af;line-height:1.7">Your revenue-to-infra spending ratio is an extremely healthy <strong style="color:#fff">5.4×</strong>. You have significant room to expand your Meta Ads campaign budget and potentially boost MRR by 15%.</p>
+            <button style="margin-top:14px;padding:8px 16px;border-radius:10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:var(--emerald);font-size:11px;font-weight:700;cursor:pointer">Increase Ad Spend →</button>
+          </div>
+          <div class="card">
+            <div class="card-title">🔴 HubSpot Renewal Alert</div>
+            <div class="card-sub">Warning · Contract Due in 4 Months</div>
+            <p style="font-size:12px;color:#9ca3af;line-height:1.7">Your HubSpot CRM annual contract is up for renewal in 4 months. Historical data shows <strong style="color:#fff">15–20% negotiation discounts</strong> are achievable at this tier. Estimated savings: <strong style="color:#fff">$2,200/year</strong>.</p>
+            <button style="margin-top:14px;padding:8px 16px;border-radius:10px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);color:var(--amber);font-size:11px;font-weight:700;cursor:pointer">Draft Negotiation Email →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FRAUD DETECTION ══════════ -->
+    <div id="page-fraud" class="page">
+      <div class="header">
+        <div class="header-left"><h2>Fraud Detection</h2><p>Real-time AI threat intelligence · FinPilot Neural Guard</p></div>
+        <div class="header-right">
+          <div class="badge badge-rose">⚡ 3 Active Threats</div>
+          <div class="badge badge-violet">🧠 Neural Guard: Active</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="stats-grid">
+          <div class="stat-card" style="border-color:rgba(244,63,94,.2);background:linear-gradient(135deg,rgba(244,63,94,.1),rgba(244,63,94,.04))"><div class="stat-label" style="color:var(--rose)">Active Threats</div><div class="stat-value" style="color:var(--rose)">3</div><div class="stat-sub">Requiring immediate attention</div><div class="stat-trend down">▲ Critical</div></div>
+          <div class="stat-card" style="border-color:rgba(245,158,11,.2);background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(245,158,11,.04))"><div class="stat-label" style="color:var(--amber)">Blocked Charges</div><div class="stat-value" style="color:var(--amber)">$3,350</div><div class="stat-sub">Fraudulent transactions blocked</div><div class="stat-trend up">✓ Protected</div></div>
+          <div class="stat-card" style="border-color:rgba(16,185,129,.2);background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(16,185,129,.04))"><div class="stat-label" style="color:var(--emerald)">Model Precision</div><div class="stat-value" style="color:var(--emerald)">99.84%</div><div class="stat-sub">F1-score · Neural Guard v4.2</div><div class="stat-trend up">▲ Excellent</div></div>
+          <div class="stat-card" style="border-color:rgba(168,85,247,.2);background:linear-gradient(135deg,rgba(168,85,247,.1),rgba(168,85,247,.04))"><div class="stat-label" style="color:var(--violet)">Rules Active</div><div class="stat-value" style="color:var(--violet)">42</div><div class="stat-sub">FATF-aligned AML compliance</div><div class="stat-trend up">▲ Healthy</div></div>
+        </div>
+        <div class="charts-row">
+          <div class="card">
+            <div class="card-title">Fraud Analytics — 12-Month Trend</div>
+            <div class="card-sub">Flagged, blocked &amp; false positive events</div>
+            <div id="chart-fraud" style="height:200px"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Risk Distribution</div>
+            <div class="card-sub">Current transaction risk breakdown</div>
+            <div id="chart-risk" style="height:200px"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:14px">Suspicious Transactions — AI Analysis Queue</div>
+          <table class="tx-table">
+            <thead><tr><th>Date</th><th>Merchant</th><th>Amount</th><th>Risk Level</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr style="background:rgba(244,63,94,.04)"><td style="color:#9ca3af;font-size:11px">May 22</td><td><span style="font-size:13px;font-weight:600;color:#fff">Unknown Terminal #49</span><div style="font-size:10px;color:#6b7280">ATM · NY, USA — geo mismatch: London</div></td><td style="font-weight:700;color:var(--rose)">$250.00</td><td><span class="chip chip-rose">Critical · 89</span></td><td><span class="chip chip-rose">⚠ Flagged</span></td><td><div style="display:flex;gap:6px"><button style="padding:5px 10px;border-radius:8px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:var(--emerald);font-size:10px;font-weight:700;cursor:pointer">Allow</button><button style="padding:5px 10px;border-radius:8px;background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.2);color:var(--rose);font-size:10px;font-weight:700;cursor:pointer">Block</button></div></td></tr>
+              <tr style="background:rgba(244,63,94,.04)"><td style="color:#9ca3af;font-size:11px">May 16</td><td><span style="font-size:13px;font-weight:600;color:#fff">CryptoSwap Inc</span><div style="font-size:10px;color:#6b7280">DeFi · Non-whitelisted wallet address</div></td><td style="font-weight:700;color:var(--rose)">$850.00</td><td><span class="chip chip-rose">Critical · 94</span></td><td><span class="chip chip-rose">⚠ Flagged</span></td><td><div style="display:flex;gap:6px"><button style="padding:5px 10px;border-radius:8px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:var(--emerald);font-size:10px;font-weight:700;cursor:pointer">Allow</button><button style="padding:5px 10px;border-radius:8px;background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.2);color:var(--rose);font-size:10px;font-weight:700;cursor:pointer">Block</button></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ AI ASSISTANT ══════════ -->
+    <div id="page-assistant" class="page" style="height:100vh;display:none;flex-direction:column">
+      <div class="header" style="position:relative">
+        <div class="header-left" style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--violet),var(--indigo));display:flex;align-items:center;justify-content:center;font-size:18px;position:relative">🧠<span style="position:absolute;bottom:-2px;right:-2px;width:11px;height:11px;border-radius:50%;background:var(--emerald);border:2px solid var(--card-bg)"></span></div>
+          <div><h2>FinPilot AI Assistant</h2><p>Online · Analyzing your finances</p></div>
+        </div>
+        <div class="header-right"><div class="badge badge-violet">Neural Engine v4.2</div></div>
+      </div>
+      <div id="chat-messages" style="flex:1;overflow-y:auto;padding:20px 28px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--violet),var(--indigo));display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">✦</div>
+          <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;border-bottom-left-radius:4px;padding:14px 18px;max-width:75%">
+            <p style="font-size:13px;color:#d1d5db;line-height:1.6">Welcome back, Jane! I'm FinPilot AI — your intelligent financial co-pilot. I've already scanned your accounts this morning. Here's what I found:</p>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">
+              <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--emerald)">+2.4%</div><div style="font-size:9px;color:#6b7280;margin-top:2px">Portfolio</div></div>
+              <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--emerald)">12/100</div><div style="font-size:9px;color:#6b7280;margin-top:2px">Risk Score</div></div>
+              <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--amber)">2</div><div style="font-size:9px;color:#6b7280;margin-top:2px">Alerts</div></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;align-items:flex-start">
+          <div style="background:linear-gradient(135deg,var(--violet),var(--indigo));border-radius:16px;border-bottom-right-radius:4px;padding:12px 16px;max-width:75%">
+            <p style="font-size:13px;color:#fff;line-height:1.6">What's happening with my SaaS expenses this month?</p>
+          </div>
+          <div style="width:32px;height:32px;border-radius:10px;background:var(--indigo);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#fff">JD</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--violet),var(--indigo));display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">✦</div>
+          <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;border-bottom-left-radius:4px;padding:14px 18px;max-width:80%">
+            <p style="font-size:13px;color:#d1d5db;line-height:1.6">Your SaaS spending this month totals <strong style="color:#fff">$2,370</strong>, which is <strong style="color:var(--rose)">18% higher</strong> than your 3-month rolling average.<br><br>• <strong style="color:#fff">AWS</strong> — $1,420.50 (matches baseline)<br>• <strong style="color:#fff">OpenAI API</strong> — $500.00 (4% savings via prepaid)<br>• <strong style="color:#fff">Figma</strong> — $320.00 <span style="color:var(--amber)">⚠ 3 duplicate seats</span><br>• <strong style="color:#fff">Vercel</strong> — $450.00 (under-utilized CDN)<br><br><strong style="color:var(--violet)">Recommendation:</strong> De-duplicate Figma → save $90/mo + prepaid OpenAI → save $200/yr. Combined: <strong style="color:var(--emerald)">$1,280/year</strong>.</p>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+              <button onclick="addMessage('De-duplicate Figma seats')" style="padding:5px 12px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--card-border);color:#9ca3af;font-size:10px;font-weight:600;cursor:pointer">💡 De-duplicate Figma seats</button>
+              <button onclick="addMessage('Show full SaaS audit')" style="padding:5px 12px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--card-border);color:#9ca3af;font-size:10px;font-weight:600;cursor:pointer">💡 Show full SaaS audit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--card-border);padding:16px 28px;background:rgba(17,16,25,.8);backdrop-filter:blur(8px)">
+        <div style="display:flex;gap:8px;margin-bottom:10px;overflow-x:auto">
+          <button onclick="addMessage('Portfolio check')" style="flex-shrink:0;padding:5px 12px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid var(--card-border);color:#9ca3af;font-size:11px;cursor:pointer;white-space:nowrap">Portfolio check</button>
+          <button onclick="addMessage('Spending analysis')" style="flex-shrink:0;padding:5px 12px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid var(--card-border);color:#9ca3af;font-size:11px;cursor:pointer;white-space:nowrap">Spending analysis</button>
+          <button onclick="addMessage('Risk assessment')" style="flex-shrink:0;padding:5px 12px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid var(--card-border);color:#9ca3af;font-size:11px;cursor:pointer;white-space:nowrap">Risk assessment</button>
+          <button onclick="addMessage('Tax planning')" style="flex-shrink:0;padding:5px 12px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid var(--card-border);color:#9ca3af;font-size:11px;cursor:pointer;white-space:nowrap">Tax planning</button>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input id="chat-input" type="text" placeholder="Ask FinPilot anything about your finances..." onkeydown="if(event.key==='Enter')sendChat()"
+            style="flex:1;background:var(--bg);border:1px solid var(--card-border);border-radius:12px;padding:10px 16px;font-size:13px;color:#fff;outline:none;font-family:inherit;transition:border-color .2s"
+            onfocus="this.style.borderColor='rgba(168,85,247,.5)'" onblur="this.style.borderColor='var(--card-border)'" />
+          <button onclick="sendChat()" style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--violet),var(--indigo));border:none;color:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">➤</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── Page navigation ──
+var currentPage = 'dashboard';
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(function(p){ p.style.display='none'; p.classList.remove('active'); });
+  var pg = document.getElementById('page-' + name);
+  if(pg) { pg.style.display = name === 'assistant' ? 'flex' : 'block'; pg.classList.add('active'); }
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  if(el) el.classList.add('active');
+  currentPage = name;
+  if(name === 'dashboard') renderCharts();
+  if(name === 'fraud') renderFraudCharts();
+}
+// Show default
+document.getElementById('page-dashboard').style.display = 'block';
+
+// ── Plotly charts ──
+var chartsRendered = false;
+function renderCharts() {
+  if(chartsRendered) return;
+  chartsRendered = true;
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'];
+  var layout = {
+    margin:{t:10,b:30,l:40,r:10}, paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+    font:{color:'#6b7280',size:10,family:'Inter'}, showlegend:true,
+    legend:{font:{size:9,color:'#9ca3af'},bgcolor:'transparent'},
+    xaxis:{gridcolor:'#211f30',tickfont:{size:9}},
+    yaxis:{gridcolor:'#211f30',tickfont:{size:9}}
+  };
+  Plotly.newPlot('chart-rev', [
+    {x:months, y:[32,38,35,42,48,55,61,58,65,70,78], type:'scatter', mode:'lines+markers', name:'Revenue', line:{color:'#10b981',width:2.5,shape:'spline'}, marker:{size:4}},
+    {x:months, y:[6,7,5,8,6,9,7,8,8,10,9], type:'scatter', mode:'lines+markers', name:'Expenses', line:{color:'#f43f5e',width:2.5,shape:'spline'}, marker:{size:4}}
+  ], {...layout}, {responsive:true,displayModeBar:false});
+
+  Plotly.newPlot('chart-pie', [
+    {values:[35,25,18,12,10], labels:['Cloud','SaaS Tools','Marketing','Revenue In','Other'],
+     type:'pie', hole:.55, marker:{colors:['#6366f1','#a855f7','#f59e0b','#10b981','#374151']},
+     textinfo:'none', hoverinfo:'label+percent'}
+  ], {margin:{t:10,b:10,l:10,r:10},paper_bgcolor:'transparent',plot_bgcolor:'transparent',showlegend:true,legend:{font:{size:9,color:'#9ca3af'},bgcolor:'transparent'}}, {responsive:true,displayModeBar:false});
+}
+
+var fraudRendered = false;
+function renderFraudCharts() {
+  if(fraudRendered) return;
+  fraudRendered = true;
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var layout = {
+    margin:{t:10,b:30,l:40,r:10}, paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+    font:{color:'#6b7280',size:10,family:'Inter'}, showlegend:true,
+    legend:{font:{size:9,color:'#9ca3af'},bgcolor:'transparent'},
+    xaxis:{gridcolor:'#211f30',tickfont:{size:9}},
+    yaxis:{gridcolor:'#211f30',tickfont:{size:9}}
+  };
+  Plotly.newPlot('chart-fraud', [
+    {x:months, y:[4,7,5,9,11,8,6,13,10,8,15,12], type:'scatter', fill:'tozeroy', name:'Flagged', line:{color:'#f43f5e',width:2}, fillcolor:'rgba(244,63,94,.12)', mode:'lines'},
+    {x:months, y:[2,4,3,5,7,5,4,8,6,5,9,7], type:'scatter', fill:'tozeroy', name:'Blocked', line:{color:'#a855f7',width:2}, fillcolor:'rgba(168,85,247,.12)', mode:'lines'}
+  ], {...layout}, {responsive:true,displayModeBar:false});
+
+  Plotly.newPlot('chart-risk', [
+    {values:[3,2,3,2], labels:['Critical','High','Medium','Low'],
+     type:'pie', hole:.5, marker:{colors:['#f43f5e','#f59e0b','#eab308','#10b981']},
+     textinfo:'none', hoverinfo:'label+value'}
+  ], {margin:{t:10,b:10,l:10,r:10},paper_bgcolor:'transparent',plot_bgcolor:'transparent',showlegend:true,legend:{font:{size:9,color:'#9ca3af'},bgcolor:'transparent'}}, {responsive:true,displayModeBar:false});
+}
+
+setTimeout(renderCharts, 200);
+
+// ── AI Chat ──
+var aiReplies = [
+  "Based on your spending patterns, I've identified <strong style='color:#fff'>3 cost-saving opportunities</strong> totaling <strong style='color:#10b981'>$1,280/year</strong>. The biggest win is consolidating duplicate SaaS seats.",
+  "Your cash flow looks healthy! Revenue inflow is <strong style='color:#fff'>+8% WoW</strong> and your Stripe payouts are extremely consistent at $8,750/day average with very low variance.",
+  "Running a quick stress test... your portfolio can withstand a <strong style='color:#f43f5e'>−10% market correction</strong> with your current 14.2-month cash runway. Consider building emergency reserves to $30K.",
+  "I've flagged <strong style='color:#f43f5e'>2 suspicious transactions</strong> for your review: an ATM withdrawal in NY (geo-mismatch with London device) and a CryptoSwap transfer to a non-whitelisted wallet."
+];
+function addMessage(text) { document.getElementById('chat-input').value = text; sendChat(); }
+function sendChat() {
+  var input = document.getElementById('chat-input');
+  var text = input.value.trim();
+  if(!text) return;
+  var msgs = document.getElementById('chat-messages');
+  msgs.innerHTML += '<div style="display:flex;justify-content:flex-end;gap:10px;align-items:flex-start"><div style="background:linear-gradient(135deg,var(--violet),var(--indigo));border-radius:16px;border-bottom-right-radius:4px;padding:12px 16px;max-width:75%"><p style="font-size:13px;color:#fff;line-height:1.6">'+text+'</p></div><div style="width:32px;height:32px;border-radius:10px;background:var(--indigo);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#fff">JD</div></div>';
+  input.value = '';
+  msgs.innerHTML += '<div style="display:flex;gap:10px;align-items:flex-start"><div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--violet),var(--indigo));display:flex;align-items:center;justify-content:center;flex-shrink:0">⏳</div><div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;border-bottom-left-radius:4px;padding:12px 18px" id="typing-indicator"><div style="display:flex;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:var(--violet);animation:pulse 1s infinite"></span><span style="width:6px;height:6px;border-radius:50%;background:var(--violet);animation:pulse 1s .2s infinite"></span><span style="width:6px;height:6px;border-radius:50%;background:var(--violet);animation:pulse 1s .4s infinite"></span></div></div></div>';
+  msgs.scrollTop = msgs.scrollHeight;
+  setTimeout(function(){
+    var typing = document.getElementById('typing-indicator');
+    if(typing) { typing.parentElement.remove(); }
+    var reply = aiReplies[Math.floor(Math.random()*aiReplies.length)];
+    msgs.innerHTML += '<div style="display:flex;gap:10px;align-items:flex-start"><div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--violet),var(--indigo));display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">✦</div><div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;border-bottom-left-radius:4px;padding:14px 18px;max-width:80%"><p style="font-size:13px;color:#d1d5db;line-height:1.6">'+reply+'</p></div></div>';
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 1400 + Math.random()*600);
+}
+</script>
+</body>
+</html>

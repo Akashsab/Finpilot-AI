@@ -1,0 +1,28 @@
+{
+  "name": "Research Board",
+  "elements": [
+    {
+      "id": "mcp-1779787366889-1",
+      "type": "embed",
+      "position": {
+        "x": 400,
+        "y": 40
+      },
+      "size": {
+        "width": 1024,
+        "height": 350
+      },
+      "data": {
+        "title": "FinPilot AI Dashboard",
+        "url": "http://192.168.1.2:5173"
+      },
+      "connections": []
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": 0,
+    "y": 0,
+    "zoom": 1
+  }
+}

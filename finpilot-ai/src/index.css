@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-gray-100 font-sans antialiased overflow-x-hidden;
+    background-color: #08070d;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.08) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+/* Custom Scrollbars for modern SaaS feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #08070d;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #211f30;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a855f7;
+}
+
+/* Recharts styling tweaks to align with dark modern UI */
+.recharts-default-tooltip {
+  background-color: #111019 !important;
+  border: 1px solid #211f30 !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+  padding: 0.75rem !important;
+}
+
+.recharts-tooltip-item-list {
+  color: #e5e7eb !important;
+}
+
+/* Pulse animation for AI system status indicator */
+@keyframes aiPulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
+  }
+  50% {
+    opacity: 0.5;
+    box-shadow: 0 0 4px rgba(168, 85, 247, 0.2);
+  }
+}
+
+.ai-pulse-glow {
+  animation: aiPulse 2s infinite ease-in-out;
+}
